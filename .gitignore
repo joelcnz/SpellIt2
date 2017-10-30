@@ -1,0 +1,11 @@
+.dub/
+.DS_Store
+spellit
+SoundSetTemplate
+*.txt
+Abc
+SoundSets
+*.ttf
+*.json
+main.ini
+Projects
