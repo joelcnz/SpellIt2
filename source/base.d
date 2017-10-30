@@ -22,6 +22,14 @@ enum WordState {notUsed, wrong, correct, skipped} // if you get one wrong, then 
 
 immutable g_fontSize = 40;
 
+void addHistory(T...)(T args) {
+	import std.typecons: tuple; // untested
+	import std.conv: text;
+    import jmisc;
+
+	upDateStatus(args);
+}
+
 //#this did not work (still uses a lot of CPU), except at say 500, which is slow
 void rest(int count = 50) {
     import core.thread: Thread;

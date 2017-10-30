@@ -24,6 +24,17 @@ int main(string[] args) {
 
 		return -2;
 	}
+
+	if (args.length > 1) {
+		import std.string: join;
+		import std.range: replicate;
+
+		addHistory("User Name: ", args[1 .. $].join(" "), " ", "#".replicate(10));
+	} else {
+		addHistory("Must enter a name.. (eg ./spellit Joel Ezra Christensen)");
+
+		return -3;
+	}
 	
 	import letsndpros, std.path;
 
@@ -148,9 +159,9 @@ int main(string[] args) {
 						jx.enterPressed = false;
 						skipDraw = true;
 					}
-					import std.ascii: toLower;
+					import std.ascii: toLower, isAlpha;
 
-					if (g_keySounds && jx.lastKeyPressed.toLower >= 'a' && jx.lastKeyPressed.toLower <= 'z') {
+					if (g_keySounds && jx.lastKeyPressed.isAlpha) {
 						letSndPros._letSnds[jx.lastKeyPressed.to!char.toLower].playSnd;
 						jx.lastKeyPressed = ' ';
 					}
