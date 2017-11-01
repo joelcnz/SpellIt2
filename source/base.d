@@ -37,6 +37,10 @@ void rest(int count = 50) {
     Thread.sleep(count.dur!"msecs");
 }
 
+void keyHold(int key) {
+    while(Keyboard.isKeyPressed(cast(Keyboard.Key)key)) { rest; }
+}
+
 immutable g_keySounds = true;
 
 auto getDirs(in string folder) {

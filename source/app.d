@@ -1,4 +1,5 @@
 /+
+//#don't know what this is here for
 //#load this, even if we don't want a sound played for each letter (have it in that case for sound the word out)
 
 bugs:
@@ -148,7 +149,7 @@ int main(string[] args) {
 
 				if (jx.textStr.length > 0) {
 
-					void removeLetter() {
+					void removeDigit() {
 						import std.algorithm;
 						import std.ascii;
 						import std.array;
@@ -170,7 +171,7 @@ int main(string[] args) {
 					auto test = jx.textStr.to!string.matchFirst(regex("[0-9]"));
 					if (! test.empty) {
 						choiceLetter = test.hit[0];
-						removeLetter;
+						removeDigit;
 					}
 					if (jx.enterPressed) {
 						immutable input = jx.textStr.to!string;
@@ -186,8 +187,9 @@ int main(string[] args) {
 				projectEtc.draw;
 
 				void doExit() {
-					while(Keyboard.isKeyPressed(cast(Keyboard.Key)(Keyboard.Key.Num0 + 6))) { rest; }
-					while(Keyboard.isKeyPressed(cast(Keyboard.Key)(Keyboard.Key.Num0 + 0))) { rest; }
+					keyHold(Keyboard.Key.Num0 + 6);
+					keyHold(Keyboard.Key.Num0 + 0); //#don't know what this is here for
+
 					menuMan.updateGoing(MenuList.yes); // put it back as it was
 					stage = Stage.main;
 				}

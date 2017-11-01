@@ -170,7 +170,8 @@ public:
                 _popUp.setString = _completeTxt;
                 skip = Skip.no;
             } else {
-                playWordSound;
+                if (skip == Skip.no)
+                    playWordSound;
             }
         }
     }
