@@ -10,7 +10,7 @@ struct LetSndPros {
     this(in string filesLocation) {
         import std.algorithm: each, endsWith, filter;
         import std.array: array;
-        import std.ascii: lowercase;
+        import std.ascii: lowercase, digits;
         import std.file: dirEntries, exists, isDir, SpanMode;
         import std.path: dirSeparator, buildPath;
         import std.stdio: writeln;

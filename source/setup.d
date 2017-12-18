@@ -10,6 +10,8 @@ private:
     string _settingsSoundsSet;
     string _settingsProjectLot;
     string _settingsProject;
+    string _alphabetSet;
+
     int _settingsReadOutPausesMilSecs;
 public:
     auto settingsSoundsSet() { return _settingsSoundsSet; }
@@ -20,6 +22,9 @@ public:
 
     auto settingsProject() { return _settingsProject; }
     void settingsProject(in string project) { _settingsProject = project; }
+
+    auto alphabetSet() { return _alphabetSet; }
+    void alphabetSet(in string alphabetSet) { _alphabetSet = alphabetSet; }
 
     auto settingsReadOutPausesMilSecs() { return _settingsReadOutPausesMilSecs; }
 
@@ -43,6 +48,7 @@ public:
             writefln("soundsSet=%s", _settingsSoundsSet);
             writefln("projectLot=%s", _settingsProjectLot);
             writefln("project=%s", _settingsProject);
+            writefln("alphabetSet=%s", _alphabetSet);
             writefln("readOutPausesMilSecs=%s", _settingsReadOutPausesMilSecs);
         }
     }
@@ -56,6 +62,8 @@ public:
             _settingsSoundsSet = ini["settings"].getKey("soundsSet");
             _settingsProjectLot = ini["settings"].getKey("projectLot");
             _settingsProject = ini["settings"].getKey("project");
+            _alphabetSet = ini["settings"].getKey("alphabetSet");
+            _alphabetSet.gh;
             _settingsReadOutPausesMilSecs = ini["settings"].getKey("readOutPausesMilSecs").to!int;
         } else {
             import std.stdio: stderr, writeln;
@@ -70,8 +78,6 @@ public:
 
         g_font = new Font;
         g_font.loadFromFile("DejaVuSans.ttf");
-        //g_font.loadFromFile("8bitOperatorPlus8-Bold.ttf");
-        //g_font.loadFromFile("Dancing.ttf");
         if (! g_font) {
             import std.stdio: writeln;
             writeln("Font not load");

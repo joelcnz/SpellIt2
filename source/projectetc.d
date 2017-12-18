@@ -158,17 +158,15 @@ public:
 
     void process() {
         if ((_playingCorrect && ! _sayCorrects.isPlaying) || skip == Skip.yes) {
+            skip = Skip.no;
             _playingCorrect = false;
             if (_doPlaySndDone) {
                 _doPlaySndDone = false;
-                import std.random: uniform;
-
                 if (_allPerfect)
                     _oneHundredPercent.playSnd.next;
                 else
                     _sayAllDones.playSnd.next;
                 _popUp.setString = _completeTxt;
-                skip = Skip.no;
             } else {
                 if (skip == Skip.no)
                     playWordSound;
@@ -184,7 +182,7 @@ public:
         shuffle;
     }
 
-    auto words() { return _words.length; }
+    auto wordCount() { return _words.length; }
 
     void loadDirNames() {
         import std.algorithm: filter;
@@ -196,10 +194,8 @@ public:
         scope(exit)
             jx.historyColour = mainColour;
 		jx.historyColour = Color(0, 180, 0);
-        jx.addToHistory("List of projects:");
         _projectsList.length = 0;
         foreach(i, dir; getDirs(buildPath("Projects", _projectsLot))) {
-            jx.addToHistory(i, ". ", dir[dir.lastIndexOf(dirSeparator) + 1 .. $]);
             _projectsList ~= dir[dir.lastIndexOf(dirSeparator) + 1 .. $];
         }
     }
@@ -222,15 +218,29 @@ public:
     }
 
     void add(in string project) {
-        import std.file: dirEntries, SpanMode;
+        import std.file: dirEntries, SpanMode, isDir, exists;
         import std.algorithm: filter, endsWith;
-        import std.path: buildPath;
+        import std.path: buildPath, stripExtension, baseName;
         import std.string: toLower;
 
         _words.length = 0;
         foreach(string name; dirEntries(buildPath("Projects", _projectsLot, project), SpanMode.shallow).
-                                filter!(f => f.name.toLower.endsWith(".wav", ".ogg"))) {
-            _words ~= new Word(name);
+                                filter!(f => f.name.toLower.endsWith(".wav", ".ogg") ||
+                                    f.name.isDir)) {
+            if (name.isDir) {
+                string mainName = buildPath(name, name.baseName ~ ".wav"),
+                    hint = buildPath(name, "hint.wav");
+                if (! mainName.exists) {
+                    (mainName ~ " not found").gh;
+                    continue;
+                }
+                if (hint.exists)
+                    _words ~= new Word(mainName, hint);
+                else
+                    _words ~= new Word(mainName);
+
+            } else
+                _words ~= new Word(name);
         }
         g_setup.settingsProject = project;
         _project = project;
@@ -250,12 +260,19 @@ public:
         return _current.word;
     }
 
+    void playHint() {
+        if (_current.hintSnd && ! _current.hintSnd.isPlaying)
+            _current.playHint;
+    }
+
     /// Hear the word
     void playWordSound() {
         mixin(ifCurrentNull);
 
         _current.sfx.playSnd;
-        enum spellWord = "Spell the word you heard (press 1 to hear again)..";
+        import std.conv: text;
+
+        immutable spellWord = text("(", _index + 1, "/", _words.length, ") Spell the word you heard (press 1 to hear again)..");
         jx.addToHistory(spellWord);
         _popUp.setString = spellWord;
     }
@@ -303,7 +320,7 @@ public:
             break;
             case ProjectState.finished:
                 //#What of this?!
-                complete;                
+                //complete; // had no effect
             break;
         }
 
@@ -324,14 +341,16 @@ public:
             wrong = getCount(WordState.wrong),
             wrongs = _wrongs,
             skips = getCount(WordState.skipped),
-            total = words;
+            total = wordCount;
 
         import std.format: format;
         import std.conv: text;
         _completeTxt = text(total, " total, ", correct, " correct, ", wrong, " wrong",
             ", ", format("%3.0f", (100 / (total == skips ? 1 : total - skips)) * correct), "%, ",
             wrongs, " Errors, ", skips, " skips.");
-        if (skips == 0 && total == correct) //#I'm not sure about skips
+        _popUp.setString = _completeTxt;
+
+        if (total == correct && skips != total)
             _allPerfect = true;
         else
             _allPerfect = false;

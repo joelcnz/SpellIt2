@@ -23,18 +23,14 @@ enum WordState {notUsed, wrong, correct, skipped} // if you get one wrong, then 
 immutable g_fontSize = 40;
 
 void addHistory(T...)(T args) {
-	import std.typecons: tuple; // untested
-	import std.conv: text;
-    import jmisc;
+    import jmisc: upDateStatus;
 
 	upDateStatus(args);
 }
 
 //#this did not work (still uses a lot of CPU), except at say 500, which is slow
 void rest(int count = 50) {
-    import core.thread: Thread;
-
-    Thread.sleep(count.dur!"msecs");
+    sleep(count.dur!"msecs");
 }
 
 void keyHold(int key) {
@@ -45,8 +41,8 @@ immutable g_keySounds = true;
 
 auto getDirs(in string folder) {
     import std.algorithm: filter;
-    import std.file: dirEntries, SpanMode, isDir;
     import std.array: array;
+    import std.file: dirEntries, isDir, SpanMode;
 
     return dirEntries(folder, SpanMode.shallow).filter!(f => f.name.isDir).array;
 }

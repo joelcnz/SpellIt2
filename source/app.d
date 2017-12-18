@@ -1,6 +1,6 @@
+//#TO DO
 /+
 //#don't know what this is here for
-//#load this, even if we don't want a sound played for each letter (have it in that case for sound the word out)
 
 bugs:
 
@@ -11,6 +11,9 @@ Crashed after I put some thing in after completing a project! fixed: was checkin
 Welcome to Spell-It
 
 Started: 14 March 2017
+
+2 12 2017 Started adding custom alphabet sounds (Morris here)
+1 12 2017 Added showing where you are upto (eg. 5/11 doing number 5 out of 11 in the project). Worked on word skipping.
 +/
 module main;
 
@@ -37,14 +40,7 @@ int main(string[] args) {
 		return -3;
 	}
 	
-	import letsndpros, std.path;
-
-	LetSndPros letSndPros;
-	//#load this, even if we don't want a sound played for each letter (have it in that case for sound the word out)
-	letSndPros = LetSndPros(buildPath("Abc", /* temp magic value */ "April17"));
-	//auto letSndPros = LetSndPros(buildPath("Abc", /* temp magic value */ "April17Jade")); // 'p' is not said, she says she's not going to say that'
-
-	enum Stage {main, list, go, ProjectSelect, ProjectLotsSelect, SoundSetSelect}
+	enum Stage {main, list, go, ProjectSelect, ProjectLotsSelect, SoundSetSelect, AlphabetSetSelect, TextFont}
 	Stage stage = Stage.main;
 
 	import std.conv: to, text;
@@ -65,14 +61,23 @@ int main(string[] args) {
 		g_setup.saveSettings;
 	}
 
+	import letsndpros, std.path;
+
+	LetSndPros letSndPros;
+	void setAlphabet() {
+		letSndPros = LetSndPros(buildPath("Abc", g_setup.alphabetSet));
+	}
+	setAlphabet;
+
 	auto menuMan = MenuMan();
 	menuMan.updateAll(g_setup.settingsProject, projectEtc.projectsLot, g_setup.settingsSoundsSet,
-					  projectEtc.getWords);
+					  projectEtc.getWords, g_setup.alphabetSet);
 
 	bool doDisplay = true;
 
 	void setProject() {
-		menuMan.updateMain(projectEtc.project, projectEtc.projectsLot, g_setup.settingsSoundsSet);
+		menuMan.updateMain(projectEtc.project, projectEtc.projectsLot, g_setup.settingsSoundsSet,
+						   g_setup.alphabetSet);
 		menuMan.updateProjectWords(projectEtc.project, projectEtc.getWords);
 		menuMan.updateProjectList(projectEtc.project, projectEtc.projectsLot);
 	}
@@ -98,7 +103,7 @@ int main(string[] args) {
 		final switch(stage) {
 			case Stage.main:
 				menuMan._main.view;
-				final switch(menuMan.choose(1, 6)) {
+				final switch(menuMan.choose(Stage.min + 1, Stage.max + 1, "Main Menu")) {
 					case -1, 0: break;
 					case 1:
 						stage = Stage.go;
@@ -117,6 +122,12 @@ int main(string[] args) {
 						stage = Stage.SoundSetSelect;
 					break;
 					case 6:
+						stage = Stage.AlphabetSetSelect;
+					break;
+					case 7:
+						stage = Stage.TextFont;
+					break;
+					case 8:
 						g_window.close;
 					break;
 				}
@@ -124,7 +135,7 @@ int main(string[] args) {
 			case Stage.list:
 				with(menuMan._projectWords) {
 					view;
-					if (menuMan.choose(0, 0) == 0)
+					if (menuMan.choose(0, 0, "Project List") == 0)
 						stage = Stage.main;
 				}
 			break;
@@ -161,9 +172,12 @@ int main(string[] args) {
 						skipDraw = true;
 					}
 					import std.ascii: toLower, isAlpha;
+					import std.algorithm: canFind;
 
 					if (g_keySounds && jx.lastKeyPressed.isAlpha) {
-						letSndPros._letSnds[jx.lastKeyPressed.to!char.toLower].playSnd;
+						immutable tkey = jx.lastKeyPressed.to!char.toLower;
+						if (tkey in letSndPros._letSnds)
+							letSndPros._letSnds[tkey].playSnd;
 						jx.lastKeyPressed = ' ';
 					}
 					import std.regex: matchFirst, regex;
@@ -188,6 +202,7 @@ int main(string[] args) {
 
 				void doExit() {
 					keyHold(Keyboard.Key.Num0 + 6);
+					keyHold(Keyboard.Key.Num0 + 7);
 					keyHold(Keyboard.Key.Num0 + 0); //#don't know what this is here for
 
 					menuMan.updateGoing(MenuList.yes); // put it back as it was
@@ -213,13 +228,18 @@ int main(string[] args) {
 					break;
 					case '5':
 						projectEtc.skip = Skip.yes;
-						projectEtc.next.playWordSound;
+						projectEtc.next;
 						if (projectEtc.done) {
-							projectEtc.complete;
 							menuMan.updateGoing(MenuList.no);
+							projectEtc.complete;
 						}
+						reset;
+						keyHold(Keyboard.Key.Num5);
 					break;
 					case '6':
+						projectEtc.playHint;
+					break;
+					case '7':
 						if (menuMan._list == MenuList.yes)
 							doExit;
 					break;
@@ -228,7 +248,7 @@ int main(string[] args) {
 			case Stage.ProjectSelect:
 				menuMan._projectList.view;
 				import std.conv: to;
-				immutable i = menuMan.choose(0, menuMan._projectList.items.length);
+				immutable i = menuMan.choose(0, menuMan._projectList.items.length, "Project Select");
 				switch(i) {
 					default: break;
 					case 0:
@@ -244,13 +264,15 @@ int main(string[] args) {
 			break;
 			case Stage.ProjectLotsSelect:
 				menuMan._projectLotList.view;
-				immutable i = menuMan.choose(0, menuMan._projectList.items.length);
+				immutable i = menuMan.choose(0, menuMan._projectList.items.length, "Project Lots Select");
 				switch(i) {
 					default: break;
 					case 0:
 						stage = Stage.main;
 					break;
 					case 1: .. case 9:
+						if (i >= menuMan._projectList.items.length)
+							continue;
 						auto lastProjectLot = projectEtc.projectsLot;
 						projectEtc.getProjectsLotByNum(i - 1);
 						projectEtc.loadDirNames;
@@ -260,7 +282,8 @@ int main(string[] args) {
 							setProject;
 						}
 						menuMan.updateProjectList(projectEtc.project, projectEtc.projectsLot);
-						menuMan.updateMain(projectEtc.project, projectEtc.projectsLot, g_setup.settingsSoundsSet);
+						menuMan.updateMain(projectEtc.project, projectEtc.projectsLot,
+										   g_setup.settingsSoundsSet, g_setup.alphabetSet);
 						stage = Stage.main;
 					break;
 				}
@@ -269,7 +292,7 @@ int main(string[] args) {
 				menuMan._soundSet.view;
 				import std.conv: to;
 
-				immutable i = menuMan.choose(0, menuMan._soundSet.items.length);
+				immutable i = menuMan.choose(0, menuMan._soundSet.items.length, "Sound Set Select");
 				switch(i) {
 					default: break;
 					case 0:
@@ -286,10 +309,42 @@ int main(string[] args) {
 							if (i2 == i - 1)
 								g_setup.settingsSoundsSet = dir[dir.lastIndexOf(dirSeparator) + 1 .. $];
 						projectEtc.setupSoundSet;
-						menuMan.updateMain(projectEtc.project, projectEtc.projectsLot, g_setup.settingsSoundsSet);
+						menuMan.updateMain(projectEtc.project, projectEtc.projectsLot,
+										   g_setup.settingsSoundsSet, g_setup.alphabetSet);
 						stage = Stage.main;
 					break;
 				}
+			break;
+			case Stage.AlphabetSetSelect:
+				menuMan._alphabetSounds.view;
+				import std.conv: to;
+
+				immutable i = menuMan.choose(0, menuMan._alphabetSounds.items.length, "Alphabet Set Select");
+				switch(i) {
+					default: break;
+					case 0:
+						stage = Stage.main;
+					break;
+					case 1: .. case 9:
+						import std.algorithm: filter;
+						import std.array: array;
+						import std.file: dirEntries, SpanMode;
+						import std.path: buildPath, dirSeparator, isDir;
+						import std.string: lastIndexOf;
+	
+						foreach(i2, dir; getDirs("Abc"))
+							if (i2 == i - 1)
+								g_setup.alphabetSet = dir[dir.lastIndexOf(dirSeparator) + 1 .. $];
+						setAlphabet;
+						menuMan.updateMain(projectEtc.project, projectEtc.projectsLot,
+										   g_setup.settingsSoundsSet, g_setup.alphabetSet);
+						stage = Stage.main;
+					break;
+				}
+			break;
+			case Stage.TextFont:
+				//#TO DO
+				stage = Stage.main;
 			break;
 		}
 
