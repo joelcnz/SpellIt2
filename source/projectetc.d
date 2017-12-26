@@ -300,7 +300,6 @@ public:
             case letters:
                 import std.random: randomShuffle;
                 import std.conv: to;
-                //import std.array: array;
 
                 auto shuffle = _current.word.to!(dchar[]);
                 shuffle.randomShuffle;
@@ -348,6 +347,7 @@ public:
                     //jx.addToHistory("Next");
                     addHistory("Next");
                     _current = _words[_index];
+                    _hint = Hint.noHint;
                 }
             break;
             case ProjectState.finished:

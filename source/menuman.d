@@ -79,7 +79,7 @@ struct MenuMan {
 		final switch(list) with(MenuList) {
 			case yes:
 				itemsList = ["1. Read out word",
-							 "2. Show the word",
+							 "2. Show the word (hint)",
 							 "3. Clear pop up",
 							 "4. Say the letters",
 							 "5. Skip to next word",
