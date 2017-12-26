@@ -1,3 +1,4 @@
+//#dateTimeString - why does this work, when it's not included
 //#this did not work (still uses a lot of CPU), except at say 500, which is slow
 module base;
 
@@ -11,6 +12,7 @@ import dini.dini, jec;
 import menu, projectetc, setup, worditem;
 
 Setup g_setup;
+string g_accountDir;
 
 alias jx = g_inputJex;
 
@@ -23,9 +25,15 @@ enum WordState {notUsed, wrong, correct, skipped} // if you get one wrong, then 
 immutable g_fontSize = 40;
 
 void addHistory(T...)(T args) {
+    import std.file: append;
+    import std.path: buildPath;
+    import std.conv: text;
+
+    //#dateTimeString - why does this work, when it's not included    
     import jmisc: upDateStatus;
 
 	upDateStatus(args);
+    append(buildPath("Accounts", g_accountDir, "history.txt"), text(dateTimeString, " ", args, "\n"));
 }
 
 //#this did not work (still uses a lot of CPU), except at say 500, which is slow

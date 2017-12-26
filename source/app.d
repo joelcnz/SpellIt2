@@ -18,10 +18,45 @@ Started: 14 March 2017
 module main;
 
 import std.math;
+import std.algorithm: filter;
+import std.array: array;
+import std.file: dirEntries, SpanMode, isDir, exists;
+import std.path: buildPath, dirSeparator;
+import std.string: lastIndexOf, join;
+import std.range: replicate;
+import std.conv: to, text;
 
 import base, menuman;
 
 int main(string[] args) {
+	if (args.length > 1) {
+		immutable userName = args[1 .. $].join(" ");
+		immutable account = buildPath("Accounts", userName);
+		if (account.exists && account.isDir) {
+			g_accountDir = userName;
+		} else {
+			import std.stdio: writeln;
+
+			writeln("Account no found!");
+
+			return -4;
+		}
+	} else {
+		addHistory("Must enter a name.. (eg ./spellit Joel)");
+
+		return -3;
+	}
+		
+	ProjectEtc projectEtc;
+	with(projectEtc) {
+		with(g_setup) {
+			setSettingsFileName = buildPath("Accounts", g_accountDir, "main.ini");
+			loadSettings;
+			projectsLot = settingsProjectLot;
+			add(settingsProject);
+		}
+	}
+
 	if (g_setup.setup != 0) {
 		gh("Aborting...");
 		g_window.close;
@@ -29,37 +64,16 @@ int main(string[] args) {
 		return -2;
 	}
 
-	if (args.length > 1) {
-		import std.string: join;
-		import std.range: replicate;
-
-		addHistory("User Name: ", args[1 .. $].join(" "), " ", "#".replicate(10));
-	} else {
-		addHistory("Must enter a name.. (eg ./spellit Joel Ezra Christensen)");
-
-		return -3;
-	}
-	
-	enum Stage {main, list, go, ProjectSelect, ProjectLotsSelect, SoundSetSelect, AlphabetSetSelect, TextFont}
-	Stage stage = Stage.main;
-
-	import std.conv: to, text;
-	import std.path: buildPath;
-
-	ProjectEtc projectEtc;
 	with(projectEtc) {
-		with(g_setup) {
-			setSettingsFileName = "main.ini";
-			loadSettings;
-			projectsLot = settingsProjectLot;
-			add(settingsProject);
-		}
 		setup;
 		loadDirNames;
 	}
 	scope(exit) {
 		g_setup.saveSettings;
 	}
+
+	enum Stage {main, list, go, projectSelect, projectLotsSelect, soundSetSelect, alphabetSetSelect, textFont}
+	Stage stage = Stage.main;
 
 	import letsndpros, std.path;
 
@@ -113,19 +127,19 @@ int main(string[] args) {
 						stage = Stage.list;
 					break;
 					case 3:
-						stage = Stage.ProjectSelect;
+						stage = Stage.projectSelect;
 					break;
 					case 4:
-						stage = Stage.ProjectLotsSelect;
+						stage = Stage.projectLotsSelect;
 					break;
 					case 5:
-						stage = Stage.SoundSetSelect;
+						stage = Stage.soundSetSelect;
 					break;
 					case 6:
-						stage = Stage.AlphabetSetSelect;
+						stage = Stage.alphabetSetSelect;
 					break;
 					case 7:
-						stage = Stage.TextFont;
+						stage = Stage.textFont;
 					break;
 					case 8:
 						g_window.close;
@@ -215,19 +229,25 @@ int main(string[] args) {
 							doExit;
 					break;
 					case '1':
+						addHistory("Play word");
 						projectEtc.playWordSound;
 					break;
 					case '2':
+						addHistory("Show hint");
+
 						projectEtc.showTheWord;
 					break;
 					case '3':
+						addHistory("Clear word");
 						projectEtc.clearPopUp;
 					break;
 					case '4':
+						addHistory("Sound word out..");
 						letSndPros.soundTheWordsOut(projectEtc.currentWord);
 					break;
 					case '5':
 						projectEtc.skip = Skip.yes;
+						addHistory("Word skipped..");
 						projectEtc.next;
 						if (projectEtc.done) {
 							menuMan.updateGoing(MenuList.no);
@@ -237,17 +257,19 @@ int main(string[] args) {
 						keyHold(Keyboard.Key.Num5);
 					break;
 					case '6':
+						addHistory("Play hint..");
 						projectEtc.playHint;
 					break;
 					case '7':
+						addHistory("Go to Main menu..");
 						if (menuMan._list == MenuList.yes)
 							doExit;
 					break;
 				}
 			break;
-			case Stage.ProjectSelect:
+			case Stage.projectSelect:
 				menuMan._projectList.view;
-				import std.conv: to;
+
 				immutable i = menuMan.choose(0, menuMan._projectList.items.length, "Project Select");
 				switch(i) {
 					default: break;
@@ -262,9 +284,9 @@ int main(string[] args) {
 					break;
 				}
 			break;
-			case Stage.ProjectLotsSelect:
+			case Stage.projectLotsSelect:
 				menuMan._projectLotList.view;
-				immutable i = menuMan.choose(0, menuMan._projectList.items.length, "Project Lots Select");
+				immutable i = menuMan.choose(0, menuMan._projectLotList.items.length, "Project Lots Select");
 				switch(i) {
 					default: break;
 					case 0:
@@ -273,7 +295,7 @@ int main(string[] args) {
 					case 1: .. case 9:
 						if (i >= menuMan._projectList.items.length)
 							continue;
-						auto lastProjectLot = projectEtc.projectsLot;
+						immutable lastProjectLot = projectEtc.projectsLot;
 						projectEtc.getProjectsLotByNum(i - 1);
 						projectEtc.loadDirNames;
 						menuMan.updateProjectLots(projectEtc.projectsLot);
@@ -288,7 +310,7 @@ int main(string[] args) {
 					break;
 				}
 			break;
-			case Stage.SoundSetSelect:
+			case Stage.soundSetSelect:
 				menuMan._soundSet.view;
 				import std.conv: to;
 
@@ -298,13 +320,7 @@ int main(string[] args) {
 					case 0:
 						stage = Stage.main;
 					break;
-					case 1: .. case 9:
-						import std.algorithm: filter;
-						import std.array: array;
-						import std.file: dirEntries, SpanMode;
-						import std.path: buildPath, dirSeparator, isDir;
-						import std.string: lastIndexOf;
-	
+					case 1: .. case 9:	
 						foreach(i2, dir; getDirs("SoundSets"))
 							if (i2 == i - 1)
 								g_setup.settingsSoundsSet = dir[dir.lastIndexOf(dirSeparator) + 1 .. $];
@@ -315,9 +331,8 @@ int main(string[] args) {
 					break;
 				}
 			break;
-			case Stage.AlphabetSetSelect:
+			case Stage.alphabetSetSelect:
 				menuMan._alphabetSounds.view;
-				import std.conv: to;
 
 				immutable i = menuMan.choose(0, menuMan._alphabetSounds.items.length, "Alphabet Set Select");
 				switch(i) {
@@ -326,12 +341,6 @@ int main(string[] args) {
 						stage = Stage.main;
 					break;
 					case 1: .. case 9:
-						import std.algorithm: filter;
-						import std.array: array;
-						import std.file: dirEntries, SpanMode;
-						import std.path: buildPath, dirSeparator, isDir;
-						import std.string: lastIndexOf;
-	
 						foreach(i2, dir; getDirs("Abc"))
 							if (i2 == i - 1)
 								g_setup.alphabetSet = dir[dir.lastIndexOf(dirSeparator) + 1 .. $];
@@ -342,7 +351,7 @@ int main(string[] args) {
 					break;
 				}
 			break;
-			case Stage.TextFont:
+			case Stage.textFont:
 				//#TO DO
 				stage = Stage.main;
 			break;

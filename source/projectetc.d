@@ -42,6 +42,9 @@ private:
     string _completeTxt;
 
     Skip _skip;
+
+    enum Hint {noHint, letters, showWord}
+    Hint _hint = Hint.noHint;
 public:
     @property auto ref skip() { return _skip; }
 
@@ -117,13 +120,15 @@ public:
         import std.path: dirSeparator;
         import std.string: lastIndexOf;
 
-        jx.addToHistory("List of project Lots:");
+        //jx.addToHistory("List of project Lots:");
+        addHistory("List of project Lots:");
         auto dirs = dirEntries("Projects", SpanMode.shallow).
             filter!(f => f.name.isDir).array;
         _projectsLotList.length = 0;
         foreach(i, dir; dirs) {
             immutable name = dir[dir.lastIndexOf(dirSeparator) + 1 .. $];
-            jx.addToHistory(i, ". ", name);
+            //jx.addToHistory(i, ". ", name);
+            addHistory(i, ". ", name);
             _projectsLotList ~= name;
         }
     }
@@ -131,7 +136,8 @@ public:
     /// Default word, check to see if 
     void checkWord(in string input) { //#should change from alias to function
         if (input == currentWord) {
-            jx.addToHistory("Correct!");
+            //jx.addToHistory("Correct!");
+            addHistory("Correct!");
             _popUp.setString = "Correct!";
             if (current.wordState == WordState.notUsed) {
                 current.wordState = WordState.correct;
@@ -145,7 +151,8 @@ public:
         } else {
             if (currentWord != "") {
                 enum failedMessage = "Nice try.";
-                jx.addToHistory(failedMessage);
+                //jx.addToHistory(failedMessage);
+                addHistory(failedMessage);
                 _popUp.setString = failedMessage;
                 if (current.wordState == WordState.notUsed) {
                     current.wordState = WordState.wrong;
@@ -207,7 +214,8 @@ public:
             return true;
         }
         else {
-            jx.addToHistory("out of bounds! - it's from 0-", _projectsList.length - 1);
+            //jx.addToHistory("out of bounds! - it's from 0-", _projectsList.length - 1);
+            addHistory("out of bounds! - it's from 0-", _projectsList.length - 1);
             return false;
         }
     }
@@ -273,7 +281,8 @@ public:
         import std.conv: text;
 
         immutable spellWord = text("(", _index + 1, "/", _words.length, ") Spell the word you heard (press 1 to hear again)..");
-        jx.addToHistory(spellWord);
+        //jx.addToHistory(spellWord);
+        addHistory(spellWord);
         _popUp.setString = spellWord;
     }
 
@@ -281,15 +290,36 @@ public:
     void showTheWord() {
         mixin(ifCurrentNull);
         
-        immutable wordIs = "The word is spelt: " ~ _current.word;
-        jx.addToHistory(wordIs);
-        _popUp.setString = wordIs;
+        _hint += 1;
+        if (_hint == Hint.max + 1)
+            _hint = Hint.letters;
+        string wordHint;
+        final switch(_hint) with(Hint) {
+            case noHint:
+            break;
+            case letters:
+                import std.random: randomShuffle;
+                import std.conv: to;
+                //import std.array: array;
+
+                auto shuffle = _current.word.to!(dchar[]);
+                shuffle.randomShuffle;
+                wordHint = "The word has letters: " ~ shuffle.to!string;
+            break;
+            case showWord: 
+                wordHint = "The word is spelt: " ~ _current.word;
+            break;
+        }
+        addHistory(wordHint);
+        _popUp.setString = wordHint;
     }
 
     /// Clear the pop up status
     void clearPopUp() {
-        if (_state != ProjectState.finished)
+        if (_state != ProjectState.finished) {
             _popUp.setString = "";
+            _hint = Hint.letters;
+        }
     }
 
     /// return current word
@@ -310,11 +340,13 @@ public:
                 }
                 _index += 1;
                 if (_index == _words.length) {
-                    jx.addToHistory("Done.");
+                    //jx.addToHistory("Done.");
+                    addHistory("Done.");
                     _current = null;
                     _state = ProjectState.finished;
                 } else {
-                    jx.addToHistory("Next");
+                    //jx.addToHistory("Next");
+                    addHistory("Next");
                     _current = _words[_index];
                 }
             break;
@@ -354,7 +386,8 @@ public:
             _allPerfect = true;
         else
             _allPerfect = false;
-        jx.addToHistory(_completeTxt);
+        //jx.addToHistory(_completeTxt);
+        addHistory(_completeTxt);
         reset;
     }
 

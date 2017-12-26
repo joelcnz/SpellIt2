@@ -11,6 +11,7 @@ private:
     string _settingsProjectLot;
     string _settingsProject;
     string _alphabetSet;
+    string _settingsFont;
 
     int _settingsReadOutPausesMilSecs;
 public:
@@ -32,6 +33,20 @@ public:
         _settingsFileName = fileName;
     }
 
+    auto settingsFont() { return _settingsFont; }
+    void settingsFont(in string font) {
+        import std.path: buildPath;
+        import std.file: exists;
+
+        if (buildPath("Fonts", font).exists) {
+            _settingsFont = font;
+        } else {
+            import std.stdio: writeln;
+
+            writeln(font, " - not exist!");
+        }
+    }
+
     bool fileNameExists() {
         import std.file: exists;
 
@@ -49,6 +64,7 @@ public:
             writefln("projectLot=%s", _settingsProjectLot);
             writefln("project=%s", _settingsProject);
             writefln("alphabetSet=%s", _alphabetSet);
+            writefln("font=%s", _settingsFont);
             writefln("readOutPausesMilSecs=%s", _settingsReadOutPausesMilSecs);
         }
     }
@@ -63,7 +79,7 @@ public:
             _settingsProjectLot = ini["settings"].getKey("projectLot");
             _settingsProject = ini["settings"].getKey("project");
             _alphabetSet = ini["settings"].getKey("alphabetSet");
-            _alphabetSet.gh;
+            settingsFont = ini["settings"].getKey("font");
             _settingsReadOutPausesMilSecs = ini["settings"].getKey("readOutPausesMilSecs").to!int;
         } else {
             import std.stdio: stderr, writeln;
@@ -73,18 +89,25 @@ public:
     }
 
     int setup() {
+        import std.stdio: writeln;
+
+        writeln("Spell It - Setup started");
+
+        import std.path: buildPath;
+
         immutable WELCOME = "Welcome to Spell-It! Press [System] + [Q] to quit";
         g_window = new RenderWindow(VideoMode.getDesktopMode, WELCOME);
 
+        import jec.setup : setup;
+
         g_font = new Font;
-        g_font.loadFromFile("DejaVuSans.ttf");
+        g_font.loadFromFile(buildPath("Fonts", g_setup.settingsFont));
         if (! g_font) {
             import std.stdio: writeln;
-            writeln("Font not load");
-            return -1;
-        }
 
-        import jec.setup : setup;
+            writeln("Font not load");
+            return -2;
+        }
 
         g_checkPoints = true;
         if (int retVal = jec.setup != 0) {
@@ -110,6 +133,8 @@ public:
         jx.addToHistory(WELCOME);
         jx.showHistory = false;
         g_window.setFramerateLimit(60);
+
+        writeln("Spell It - Setup finished");
 
         return 0;
     }
