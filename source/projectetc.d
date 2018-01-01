@@ -110,7 +110,7 @@ public:
 
         _popUp = new Text("", g_font, g_fontSize);
         with(_popUp) {
-            setColor = Color.White; //(255, 180, 0);
+            setColor = Color.White;
             position = Vector2f(0, 800 - g_fontSize * 5);
         }
 
@@ -120,14 +120,12 @@ public:
         import std.path: dirSeparator;
         import std.string: lastIndexOf;
 
-        //jx.addToHistory("List of project Lots:");
         addHistory("List of project Lots:");
         auto dirs = dirEntries("Projects", SpanMode.shallow).
             filter!(f => f.name.isDir).array;
         _projectsLotList.length = 0;
         foreach(i, dir; dirs) {
             immutable name = dir[dir.lastIndexOf(dirSeparator) + 1 .. $];
-            //jx.addToHistory(i, ". ", name);
             addHistory(i, ". ", name);
             _projectsLotList ~= name;
         }
@@ -135,10 +133,12 @@ public:
 
     /// Default word, check to see if 
     void checkWord(in string input) { //#should change from alias to function
+        addHistory(input);
         if (input == currentWord) {
-            //jx.addToHistory("Correct!");
-            addHistory("Correct!");
-            _popUp.setString = "Correct!";
+            enum succeedMessage = "Correct!";
+
+            addHistory(succeedMessage);
+            _popUp.setString = succeedMessage;
             if (current.wordState == WordState.notUsed) {
                 current.wordState = WordState.correct;
             }
@@ -151,7 +151,7 @@ public:
         } else {
             if (currentWord != "") {
                 enum failedMessage = "Nice try.";
-                //jx.addToHistory(failedMessage);
+                
                 addHistory(failedMessage);
                 _popUp.setString = failedMessage;
                 if (current.wordState == WordState.notUsed) {
@@ -209,12 +209,11 @@ public:
     
     auto dirFromNumName(in int select) {
         if (select >= 0 && select < _projectsList.length) {
-            add(_projectsList[select]);
+            addAllWordsAndStuff(_projectsList[select]);
 
             return true;
         }
         else {
-            //jx.addToHistory("out of bounds! - it's from 0-", _projectsList.length - 1);
             addHistory("out of bounds! - it's from 0-", _projectsList.length - 1);
             return false;
         }
@@ -225,7 +224,7 @@ public:
         g_setup.settingsProjectLot = _projectsLot;
     }
 
-    void add(in string project) {
+    void addAllWordsAndStuff(in string project) {
         import std.file: dirEntries, SpanMode, isDir, exists;
         import std.algorithm: filter, endsWith;
         import std.path: buildPath, stripExtension, baseName;
@@ -259,6 +258,7 @@ public:
         _index = 0;
         _current = _words[_index];
         _state = ProjectState.going;
+        _hint = Hint.noHint;
         playWordSound;
     }
 
@@ -281,7 +281,7 @@ public:
         import std.conv: text;
 
         immutable spellWord = text("(", _index + 1, "/", _words.length, ") Spell the word you heard (press 1 to hear again)..");
-        //jx.addToHistory(spellWord);
+
         addHistory(spellWord);
         _popUp.setString = spellWord;
     }
@@ -339,12 +339,10 @@ public:
                 }
                 _index += 1;
                 if (_index == _words.length) {
-                    //jx.addToHistory("Done.");
                     addHistory("Done.");
                     _current = null;
                     _state = ProjectState.finished;
                 } else {
-                    //jx.addToHistory("Next");
                     addHistory("Next");
                     _current = _words[_index];
                     _hint = Hint.noHint;
@@ -375,8 +373,9 @@ public:
             skips = getCount(WordState.skipped),
             total = wordCount;
 
-        import std.format: format;
         import std.conv: text;
+        import std.format: format;
+
         _completeTxt = text(total, " total, ", correct, " correct, ", wrong, " wrong",
             ", ", format("%3.0f", (100 / (total == skips ? 1 : total - skips)) * correct), "%, ",
             wrongs, " Errors, ", skips, " skips.");
@@ -386,7 +385,6 @@ public:
             _allPerfect = true;
         else
             _allPerfect = false;
-        //jx.addToHistory(_completeTxt);
         addHistory(_completeTxt);
         reset;
     }

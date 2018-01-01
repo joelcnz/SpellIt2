@@ -53,7 +53,7 @@ int main(string[] args) {
 			setSettingsFileName = buildPath("Accounts", g_accountDir, "main.ini");
 			loadSettings;
 			projectsLot = settingsProjectLot;
-			add(settingsProject);
+			addAllWordsAndStuff(settingsProject);
 		}
 	}
 
@@ -234,7 +234,6 @@ int main(string[] args) {
 					break;
 					case '2':
 						addHistory("Show hint");
-
 						projectEtc.showTheWord;
 					break;
 					case '3':
