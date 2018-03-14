@@ -29,6 +29,16 @@ import std.conv: to, text;
 import base, menuman;
 
 int main(string[] args) {
+	scope(exit) {
+		import std.stdio : writeln;
+		writeln;
+		writeln("### ###");
+		writeln("#   # #");
+		writeln("### ###");
+		writeln("  # #  ");
+		writeln("### #");
+		writeln;
+	}
 	if (args.length > 1) {
 		immutable userName = args[1 .. $].join(" ");
 		immutable account = buildPath("Accounts", userName);
@@ -233,7 +243,7 @@ int main(string[] args) {
 						projectEtc.playWordSound;
 					break;
 					case '2':
-						addHistory("Show hint");
+						addHistory("Show hint, or word");
 						projectEtc.showTheWord;
 					break;
 					case '3':

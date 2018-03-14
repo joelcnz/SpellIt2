@@ -317,7 +317,8 @@ public:
     void clearPopUp() {
         if (_state != ProjectState.finished) {
             _popUp.setString = "";
-            _hint = Hint.letters;
+            //_hint = Hint.letters;
+            _hint = Hint.noHint;
         }
     }
 
