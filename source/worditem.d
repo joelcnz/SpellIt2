@@ -1,9 +1,14 @@
 import base;
 
+version(safe) {
+@safe:
+}
+
 class Word {
 private:
     string _word;
     JSound _sfx, _hint;
+    bool _hasHint;
 
     WordState _wordState;
 public:
@@ -19,7 +24,7 @@ public:
         auto wordState() { return _wordState; }
         void wordState(WordState wordState0) { _wordState = wordState0; }
 
-        auto isHint() { return _hint !is null; }
+        auto isHint() { return _hasHint; }
     }
 
     this(in string fileName, in string hintFileName = "") {
@@ -34,16 +39,22 @@ public:
         }
 
         word = fileName.baseName.stripExtension;
-        sfx = new JSound(fileName);
-        if (hintFileName != "")
-            _hint = new JSound(hintFileName);
+        sfx = JSound(fileName);
+        // sfx.load(fileName,"sfx");
+        if (hintFileName != "") {
+            _hint = JSound(hintFileName);
+            // _hint.load(hintFileName,"hint");
+            _hasHint = true;
+        }
         
         reset;
     }
 
     void playHint() {
         if (isHint)
-            _hint.playSnd;
+            _hint.play;
+            //Mix_PlayChannel(-1, _hint.mSnd, 0);
+            //_hint.play;
     }
 
     void reset() {

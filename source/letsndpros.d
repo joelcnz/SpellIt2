@@ -1,6 +1,10 @@
 //#put a pause in here
 import base;
 
+version(safe) {
+@safe:
+}
+
 import letsnd;
 
 struct LetSndPros {
@@ -28,7 +32,8 @@ struct LetSndPros {
             ".wav .ogg".split.each!(ext => checkNSet(ext));
 
             if (fileName.exists) {
-                _letSnds[let] = LetSnd(let, new JSound(fileName));
+                _letSnds[let] = LetSnd(let, fileName);
+                assert(let in _letSnds, text(_letSnds[let], " exists but failed"));
             } else {
                 success = false;
                 writeln(fileName, " - failed");
@@ -44,20 +49,33 @@ struct LetSndPros {
             writeln(fileName, " - not found");
             success = false;
         }
-        else
-            _backSpace = new JSound(fileName);
+        else {
+            _backSpace = JSound(fileName);
+            // _backSpace.load(fileName,"blow");
+        }
 
         assert(success, "check your letter sound files");
     }
 
     void playPause(in char let) {
-        assert(let in _letSnds, "Play pause failed!");
+        assert(let in _letSnds, text(let, " - Play pause failed!"));
         _letSnds[let].playSnd;
-        while(_letSnds[let].isPlaying) { rest; }
-        rest(g_setup.settingsReadOutPausesMilSecs);
+        while(_letSnds[let].isPlaying) {
+            rest();
+
+            //Handle events on queue
+            while( SDL_PollEvent( &gEvent ) != 0 ) {
+                //User requests quit
+                if (gEvent.type == SDL_QUIT)
+                    break;
+            }
+            SDL_PumpEvents();
+        }
+        // rest(g_setup.settingsReadOutPausesMilSecs);
     }
 
     void soundTheWordsOut(in string word) {
+        //writeln("######### don't even bother to sound the letters out SDL - Silly Dumb Layer!");
         import std.algorithm: each;
         import std.conv: to;
 

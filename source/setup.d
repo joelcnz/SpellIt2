@@ -1,9 +1,13 @@
 module setup;
 
+version(safe) {
+@safe:
+}
+
 import base;
 
 /// Main setup struct
-static struct Setup {
+struct Setup {
 private:
     string _settingsFileName;
 
@@ -34,6 +38,7 @@ public:
     }
 
     auto settingsFont() { return _settingsFont; }
+
     void settingsFont(in string font) {
         import std.path: buildPath;
         import std.file: exists;
@@ -96,6 +101,7 @@ public:
         import std.path: buildPath;
 
         immutable WELCOME = "Welcome to Spell-It! Press [System] + [Q] to quit";
+        /+
         g_window = new RenderWindow(VideoMode.getDesktopMode, WELCOME);
 
         import jec.setup : setup;
@@ -116,10 +122,12 @@ public:
             writefln("File: %s, Error function: %s, Line: %s, Return value: %s", __FILE__, __FUNCTION__, __LINE__, retVal);
             return -1;
         }
++/
+
 
         //immutable size = 100, lower = 40;
         immutable size = g_fontSize, lower = g_fontSize / 2;
-        jx = new InputJex(/* position */ Vector2f(0, g_window.getSize.y - size - lower),
+        jx = new InputJex(/* position */ Point(0, SCREEN_HEIGHT - size - lower),
                         /* font size */ size,
                         /* header */ "Word: ",
                         /* Type (oneLine, or history) */ InputType.history);
@@ -127,12 +135,11 @@ public:
         jx.addToHistory(""d);
         jx.edge = false;
 
-        g_mode = Mode.edit;
     	g_terminal = true;
 
         jx.addToHistory(WELCOME);
         jx.showHistory = false;
-        g_window.setFramerateLimit(60);
+        //g_window.setFramerateLimit(60);
 
         writeln("Spell It - Setup finished");
 

@@ -17,6 +17,10 @@ Started: 14 March 2017
 +/
 module main;
 
+version(safe) {
+@safe:
+}
+
 import std.math;
 import std.algorithm: filter;
 import std.array: array;
@@ -28,8 +32,46 @@ import std.conv: to, text;
 
 import base, menuman;
 
+auto setupAndStuff(in string[] args) {
+    string userName;
+    if (args.length > 1) {
+        import std.string: join;
+
+        userName = args[1 .. $].join(" ");
+    } else {
+        writeln("ID needed...");
+        return -10;
+    }
+	immutable WELCOME = "Welcome, " ~ userName; // ~ ", to " ~ programName;
+
+    g_checkPoints = true;
+
+	gFont = TTF_OpenFont(buildPath("Fonts", "DejaVuSans.ttf").toStringz, g_fontSize);
+	// gFont = new Font();
+	// gFont.load(buildPath("Fonts", "DejaVuSans.ttf"), g_fontSize);
+
+    immutable size = 100, lower = 40;
+    //immutable size = g_fontSize, lower = g_fontSize / 2;
+    jx = new InputJex(/* position */ Point(0, SCREEN_HEIGHT - size - lower),
+                    /* font size */ 100,
+                    /* header */ "Word: ",
+                    /* Type (oneLine, or history) */ InputType.history);
+    jx.addToHistory(""d);
+    jx.edge = false;
+
+    g_terminal = true;
+
+    jx.addToHistory(WELCOME);
+    jx.showHistory = false;
+
+	return 0;
+}
+
 int main(string[] args) {
+	bool freeFont = false;
 	scope(exit) {
+		if (freeFont)
+			close;
 		import std.stdio : writeln;
 		writeln;
 		writeln("### ###");
@@ -38,6 +80,7 @@ int main(string[] args) {
 		writeln("  # #  ");
 		writeln("### #");
 		writeln;
+		close();
 	}
 	if (args.length > 1) {
 		immutable userName = args[1 .. $].join(" ");
@@ -57,6 +100,21 @@ int main(string[] args) {
 		return -3;
 	}
 		
+	immutable programName = "Spell-It";
+	//SCREEN_WIDTH = 640; SCREEN_HEIGHT = 480;
+	//SCREEN_WIDTH = 2560; SCREEN_HEIGHT = 1600;
+	SCREEN_WIDTH = 1280; SCREEN_HEIGHT = 800;
+	if (jecsdlsetup("Poorly Programmed Producions - Presents: " ~ programName,
+		SCREEN_WIDTH, SCREEN_HEIGHT,
+		SDL_WINDOW_SHOWN
+		//SDL_WINDOW_OPENGL
+		//SDL_WINDOW_FULLSCREEN_DESKTOP
+		//SDL_WINDOW_FULLSCREEN
+		) != 0) {
+		writeln("Init failed");
+		return 1;
+	}
+
 	ProjectEtc projectEtc;
 	with(projectEtc) {
 		with(g_setup) {
@@ -67,11 +125,12 @@ int main(string[] args) {
 		}
 	}
 
+    assert(setupAndStuff(args) == 0);
+
 	if (g_setup.setup != 0) {
 		gh("Aborting...");
-		g_window.close;
 
-		return -2;
+		return -3;
 	}
 
 	with(projectEtc) {
@@ -106,23 +165,26 @@ int main(string[] args) {
 		menuMan.updateProjectList(projectEtc.project, projectEtc.projectsLot);
 	}
 
-    while(g_window.isOpen()) {
-        Event event;
-
-        while(g_window.pollEvent(event)) {
-            if(event.type == event.EventType.Closed) {
-                g_window.close();
-            }
+	bool done;
+    while(! done) {
+        //Handle events on queue
+        while( SDL_PollEvent( &gEvent ) != 0 ) {
+            //User requests quit
+            if (gEvent.type == SDL_QUIT)
+                done = true;
         }
 
-		if ((Keyboard.isKeyPressed(Keyboard.Key.LSystem) || Keyboard.isKeyPressed(Keyboard.Key.RSystem)) &&
-			Keyboard.isKeyPressed(Keyboard.Key.Q)) {
-			g_window.close;
-		}
+        SDL_PumpEvents();
+
+		if ((g_keys[SDL_SCANCODE_LGUI].keyPressed ||
+                g_keys[SDL_SCANCODE_RGUI].keyPressed) &&
+                g_keys[SDL_SCANCODE_Q].keyInput)
+			done = true;
 
 		projectEtc.process;
 
-		g_window.clear;
+		SDL_SetRenderDrawColor(gRenderer, 0x00, 0x00, 0x00, 0x00);
+        SDL_RenderClear(gRenderer);
 
 		final switch(stage) {
 			case Stage.main:
@@ -152,7 +214,7 @@ int main(string[] args) {
 						stage = Stage.textFont;
 					break;
 					case 8:
-						g_window.close;
+						done = true;
 					break;
 				}
 			break;
@@ -171,7 +233,7 @@ int main(string[] args) {
 
 				if (jx.backSpaceHit) {
 					if (g_keySounds)
-						letSndPros._backSpace.playSnd;
+						letSndPros._backSpace.play;
 					jx.backSpaceHit = false;
 				}
 
@@ -189,7 +251,7 @@ int main(string[] args) {
 						import std.ascii;
 						import std.array;
 
-						jx.textStr = jx.textStr.filter!(a => ! a.isDigit).array;
+						jx.textStr = jx.textStr.filter!(a => ! a.isDigit).to!string;
 						jx.xpos = jx.xpos - 1;
 						jx.updateMeasure;
 						jx.enterPressed = false;
@@ -206,13 +268,13 @@ int main(string[] args) {
 					}
 					import std.regex: matchFirst, regex;
 
-					auto test = jx.textStr.to!string.matchFirst(regex("[0-9]"));
+					auto test = jx.textStr.matchFirst(regex("[0-9]"));
 					if (! test.empty) {
 						choiceLetter = test.hit[0];
 						removeDigit;
 					}
 					if (jx.enterPressed) {
-						immutable input = jx.textStr.to!string;
+						immutable input = jx.textStr;
 						projectEtc.checkWord(input);
 						if (projectEtc.done) {
 							menuMan.updateGoing(MenuList.no);
@@ -225,9 +287,9 @@ int main(string[] args) {
 				projectEtc.draw;
 
 				void doExit() {
-					keyHold(Keyboard.Key.Num0 + 6);
-					keyHold(Keyboard.Key.Num0 + 7);
-					keyHold(Keyboard.Key.Num0 + 0); //#don't know what this is here for
+					keyHold(SDL_SCANCODE_0 + 6 + 1);
+					keyHold(SDL_SCANCODE_0 + 7 + 1);
+					keyHold(SDL_SCANCODE_0 + 0); //#don't know what this is here for
 
 					menuMan.updateGoing(MenuList.yes); // put it back as it was
 					stage = Stage.main;
@@ -263,7 +325,7 @@ int main(string[] args) {
 							projectEtc.complete;
 						}
 						reset;
-						keyHold(Keyboard.Key.Num5);
+						keyHold(SDL_SCANCODE_5);
 					break;
 					case '6':
 						addHistory("Play hint..");
@@ -367,10 +429,10 @@ int main(string[] args) {
 		}
 
 		if (doDisplay)
-			g_window.display;
+			SDL_RenderPresent(gRenderer);
  		else
 			doDisplay = true;
-    } // while
+	} // while
 
 	return 0;
 }

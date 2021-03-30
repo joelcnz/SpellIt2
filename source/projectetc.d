@@ -4,6 +4,10 @@
 //#should change from alias to function
 import base, record;
 
+version(safe) {
+@safe:
+}
+
 private:
 enum youHaveFinished = `jx.addToHistory("You have finished!");`;
 
@@ -38,13 +42,15 @@ private:
            _sayAllDones,
            _oneHundredPercent;
 
-    Text _popUp;
+    JText _popUp;
     string _completeTxt;
 
     Skip _skip;
 
     enum Hint {noHint, letters, showWord}
     Hint _hint = Hint.noHint;
+
+    import std.datetime.stopwatch : StopWatch;
 public:
     @property auto ref skip() { return _skip; }
 
@@ -79,7 +85,9 @@ public:
             foreach(string name; dirEntries(buildPath("SoundSets", g_setup.settingsSoundsSet, folder),
                                                 SpanMode.shallow)
                                  .filter!(f => f.name.toLower.endsWith(".wav", ".ogg"))) {
-                result ~= new JSound(name);
+                result ~= JSound(name);
+                result[$-1].single = true;
+                // result[$-1].load(name, "sets");
             }
             if (result.length == 0) {
                 if (soundLessFolders.length == 0)
@@ -108,11 +116,14 @@ public:
         skip = Skip.no;
         setupSoundSet;
 
-        _popUp = new Text("", g_font, g_fontSize);
-        with(_popUp) {
-            setColor = Color.White;
-            position = Vector2f(0, 800 - g_fontSize * 5);
-        }
+        //_popUp = JText("", SDL_Rect(0,0), SDL_Color(255,255,255), g_fontSize, buildPath("Fonts", "DejaVuSans.ttf"));
+        _popUp = JText("", SDL_Point(0, 800 - g_fontSize * 5), SDL_Color(255,255,255), g_fontSize,
+            buildPath("Fonts", "DejaVuSans.ttf"));
+
+        // with(_popUp) {
+        //     position = Point(0, 800 - g_fontSize * 5);
+        //     colour = SDL_Color(255,255,255);
+        // }
 
         import std.algorithm: filter;
         import std.array: array;
@@ -151,7 +162,7 @@ public:
         } else {
             if (currentWord != "") {
                 enum failedMessage = "Nice try.";
-                
+
                 addHistory(failedMessage);
                 _popUp.setString = failedMessage;
                 if (current.wordState == WordState.notUsed) {
@@ -164,7 +175,7 @@ public:
     }
 
     void process() {
-        if ((_playingCorrect && ! _sayCorrects.isPlaying) || skip == Skip.yes) {
+        if ((_playingCorrect && (_current is null || (_current !is null && ! _current.sfx.playing))) || skip == Skip.yes) {
             skip = Skip.no;
             _playingCorrect = false;
             if (_doPlaySndDone) {
@@ -269,7 +280,8 @@ public:
     }
 
     void playHint() {
-        if (_current.hintSnd && ! _current.hintSnd.isPlaying)
+        //if (_current.hintSnd && ! _current.hintSnd.isPlaying)
+        //if (! _current.hintSnd.playing)
             _current.playHint;
     }
 
@@ -277,7 +289,11 @@ public:
     void playWordSound() {
         mixin(ifCurrentNull);
 
-        _current.sfx.playSnd;
+        //_current.sfx.play;
+        //Mix_PlayChannel(-1, _current.sfx.mSnd, 0);
+
+        _current.sfx.play;
+
         import std.conv: text;
 
         immutable spellWord = text("(", _index + 1, "/", _words.length, ") Spell the word you heard (press 1 to hear again)..");
@@ -298,11 +314,16 @@ public:
             case noHint:
             break;
             case letters:
+                if (_current.word.length < 2)
+                    return;
                 import std.random: randomShuffle;
                 import std.conv: to;
 
                 auto shuffle = _current.word.to!(dchar[]);
-                shuffle.randomShuffle;
+                if (shuffle.length < 4)
+                    shuffle.randomShuffle;
+                else
+                    shuffle = shuffle.to!string.jm_jumbleWord().to!(dchar[]);
                 wordHint = "The word has letters: " ~ shuffle.to!string;
             break;
             case showWord: 
@@ -351,7 +372,7 @@ public:
             break;
             case ProjectState.finished:
                 //#What of this?!
-                //complete; // had no effect
+                // complete; // had no effect
             break;
         }
 
@@ -397,6 +418,7 @@ public:
     }
 
     void draw() {
-        g_window.draw(_popUp);
+        //g_window.draw(_popUp);
+        _popUp.draw(gRenderer);
     }
 }

@@ -1,3 +1,9 @@
+//#very pretty!
+
+version(safe) {
+@safe:
+}
+
 import base, menu;
 
 struct MenuMan {
@@ -17,7 +23,28 @@ struct MenuMan {
         int result = -1;
         
         foreach(i; min .. max + 1) {
-            if (Keyboard.isKeyPressed(cast(Keyboard.Key)(Keyboard.Key.Num0 + i))) {
+            //if (Keyboard.isKeyPressed(cast(Keyboard.Key)(Keyboard.Key.Num0 + i))) {
+			//#very pretty!
+			if ((g_keys[SDL_SCANCODE_0].keyPressed && i == 0) ||
+				(g_keys[SDL_SCANCODE_1].keyPressed && i == 1) ||
+				(g_keys[SDL_SCANCODE_2].keyPressed && i == 2) ||
+				(g_keys[SDL_SCANCODE_3].keyPressed && i == 3) ||
+				(g_keys[SDL_SCANCODE_4].keyPressed && i == 4) ||
+				(g_keys[SDL_SCANCODE_5].keyPressed && i == 5) ||
+				(g_keys[SDL_SCANCODE_6].keyPressed && i == 6) ||
+				(g_keys[SDL_SCANCODE_7].keyPressed && i == 7) ||
+				(g_keys[SDL_SCANCODE_8].keyPressed && i == 8) ||
+				(g_keys[SDL_SCANCODE_9].keyPressed && i == 9)) {
+				keyHold(SDL_SCANCODE_0);
+				keyHold(SDL_SCANCODE_1);
+				keyHold(SDL_SCANCODE_2);
+				keyHold(SDL_SCANCODE_3);
+				keyHold(SDL_SCANCODE_4);
+				keyHold(SDL_SCANCODE_5);
+				keyHold(SDL_SCANCODE_6);
+				keyHold(SDL_SCANCODE_7);
+				keyHold(SDL_SCANCODE_8);
+				keyHold(SDL_SCANCODE_9);
                 result = i;
 				addHistory(title, ` \/`);
 				addHistory(i, " selected");
@@ -26,7 +53,7 @@ struct MenuMan {
         }
 
         if (result != -1)
-			keyHold(Keyboard.Key.Num0 + result);
+			keyHold(SDL_SCANCODE_0 + result);
 
         return result;
     }
